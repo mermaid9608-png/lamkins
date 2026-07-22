@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>สมัครสมาชิก - บันทึกรายรับรายจ่าย SB</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Mitr:wght@300;400;500;600;700&display=swap">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="auth-wrap">
+  <div class="auth-card">
+    <h1>บันทึกรายรับรายจ่าย SB</h1>
+    <p class="tagline">สมัครสมาชิกใหม่</p>
+
+    <form id="register-form">
+      <label>
+        ชื่อผู้ใช้
+        <input type="text" id="reg-username" minlength="2" required autofocus>
+      </label>
+      <label>
+        รหัสผ่าน
+        <input type="password" id="reg-password" minlength="4" required>
+      </label>
+      <label>
+        ยืนยันรหัสผ่าน
+        <input type="password" id="reg-password-confirm" minlength="4" required>
+      </label>
+      <label>
+        รหัสเชิญ
+        <input type="text" id="reg-invite-code" required>
+      </label>
+      <button type="submit">สมัครสมาชิก</button>
+      <p id="register-error" class="error hidden"></p>
+    </form>
+    <p class="hint">มีบัญชีอยู่แล้ว? <a href="/login">เข้าสู่ระบบ</a></p>
+  </div>
+</div>
+
+<script>
+document.getElementById("register-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const errEl = document.getElementById("register-error");
+  errEl.classList.add("hidden");
+  const password = document.getElementById("reg-password").value;
+  const confirm = document.getElementById("reg-password-confirm").value;
+  if (password !== confirm) {
+    errEl.textContent = "รหัสผ่านทั้งสองช่องไม่ตรงกัน";
+    errEl.classList.remove("hidden");
+    return;
+  }
+  try {
+    const res = await fetch("/api/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        username: document.getElementById("reg-username").value.trim(),
+        password,
+        invite_code: document.getElementById("reg-invite-code").value,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "สมัครสมาชิกไม่สำเร็จ");
+    window.location.href = "/";
+  } catch (err) {
+    errEl.textContent = err.message;
+    errEl.classList.remove("hidden");
+  }
+});
+</script>
+</body>
+</html>

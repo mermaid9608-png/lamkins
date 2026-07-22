@@ -1,0 +1,20 @@
+# Local-mode data - never commit personal financial data or secrets
+data.db
+data.db.*
+*.db-journal
+uploads/
+flask_secret.key
+google-credentials.json
+auth_config.json
+sync_config.json
+*.sqlite-backup
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# OS
+.DS_Store
+Thumbs.db

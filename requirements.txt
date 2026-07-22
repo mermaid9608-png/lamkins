@@ -1,0 +1,7 @@
+Flask>=3.0
+gspread>=6.1
+google-auth>=2.30
+SQLAlchemy>=2.0
+psycopg2-binary>=2.9
+requests>=2.30
+gunicorn>=22.0

@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>บันทึกรายรับรายจ่าย SB</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Mitr:wght@300;400;500;600;700&display=swap">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="app">
+  <div class="auth-bar">
+    <span class="auth-bar-user">🔒 {{ username }}</span>
+    <button type="button" id="logout-btn" class="secondary">ออกจากระบบ</button>
+  </div>
+
+  <header class="app-header">
+    <h1>💰 บันทึกรายรับรายจ่าย SB</h1>
+    <p class="tagline">ป่วนได้ทั้งวัน แต่เงินต้องนิ่ง 😜</p>
+  </header>
+
+  <section class="bank-card">
+    <div class="bank-card-top">
+      <span class="bank-card-name">SB SAVINGS</span>
+      <span class="bank-card-chip">💳</span>
+    </div>
+    <div class="bank-card-balance">
+      <span class="bank-card-label">ยอดคงเหลือ</span>
+      <span class="bank-card-value" id="summary-balance">0.00</span>
+    </div>
+    <div class="bank-card-stats">
+      <div class="bank-stat income">
+        <span class="bank-stat-label">📈 รายรับ</span>
+        <span class="bank-stat-value" id="summary-income">0.00</span>
+      </div>
+      <div class="bank-stat expense">
+        <span class="bank-stat-label">📉 รายจ่าย</span>
+        <span class="bank-stat-value" id="summary-expense">0.00</span>
+      </div>
+    </div>
+    <div class="bank-card-deco" aria-hidden="true"></div>
+  </section>
+
+  <section class="panel highlight" id="add-section">
+    <h2 id="form-title">✏️ เพิ่มรายการใหม่</h2>
+    <form id="tx-form" enctype="multipart/form-data">
+      <input type="hidden" id="tx-id" value="">
+      <div class="form-row">
+        <label>
+          ประเภท (Type)
+          <select id="tx-type" required>
+            <option value="expense">รายจ่าย (Expense)</option>
+            <option value="income">รายรับ (Income)</option>
+          </select>
+        </label>
+        <label>
+          วันที่ (Date)
+          <input type="date" id="tx-date" required>
+        </label>
+        <label>
+          จำนวนเงิน (Amount)
+          <input type="number" id="tx-amount" step="0.01" min="0.01" required>
+        </label>
+      </div>
+      <div class="form-row">
+        <label class="grow">
+          หมวดหมู่ (Category)
+          <select id="tx-category" required></select>
+        </label>
+        <label class="grow">
+          บันทึกเพิ่มเติม (Note)
+          <input type="text" id="tx-note" placeholder="เช่น ค่าข้าวเที่ยง">
+        </label>
+      </div>
+      <div class="form-row">
+        <label class="grow">
+          แนบสลิป (Attach slip - image/pdf)
+          <input type="file" id="tx-slip" accept="image/*,.pdf">
+        </label>
+        <div id="existing-slip" class="existing-slip hidden">
+          <span>ไฟล์ปัจจุบัน:</span>
+          <a id="existing-slip-link" href="#" target="_blank">ดูสลิป</a>
+          <label class="checkbox-label">
+            <input type="checkbox" id="remove-slip"> ลบไฟล์นี้
+          </label>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button type="submit" id="submit-btn">✅ บันทึก</button>
+        <button type="button" id="cancel-edit-btn" class="secondary hidden">✖️ ยกเลิก</button>
+      </div>
+      <p id="form-error" class="error hidden"></p>
+    </form>
+  </section>
+
+  <section class="panel" id="list-section">
+    <div class="panel-header">
+      <h2>📋 รายการเดินบัญชี</h2>
+      <div class="quick-filters">
+        <button type="button" class="chip" id="quick-filter-all">🌟 ทั้งหมด</button>
+        <button type="button" class="chip" id="quick-filter-month">📅 เดือนนี้</button>
+      </div>
+    </div>
+    <details class="more-filters">
+      <summary>🔍 ตัวกรองเพิ่มเติม</summary>
+      <div class="filters">
+        <label>
+          เดือน
+          <input type="month" id="filter-month">
+        </label>
+        <label>
+          ประเภท
+          <select id="filter-type">
+            <option value="">ทั้งหมด</option>
+            <option value="income">รายรับ</option>
+            <option value="expense">รายจ่าย</option>
+          </select>
+        </label>
+        <label>
+          หมวดหมู่
+          <select id="filter-category">
+            <option value="">ทั้งหมด</option>
+          </select>
+        </label>
+        <button type="button" id="clear-filters-btn" class="secondary">ล้างตัวกรอง</button>
+      </div>
+    </details>
+    <div class="table-wrap">
+      <table id="tx-table">
+        <thead>
+          <tr>
+            <th>วันที่</th>
+            <th>ประเภท</th>
+            <th>หมวดหมู่</th>
+            <th>จำนวนเงิน</th>
+            <th>บันทึก</th>
+            <th>สลิป</th>
+            <th>จัดการ</th>
+          </tr>
+        </thead>
+        <tbody id="tx-table-body"></tbody>
+      </table>
+      <p id="empty-msg" class="empty-msg hidden">ยังไม่มีรายการ ลองเพิ่มรายการแรกกันเลย! 📝</p>
+    </div>
+  </section>
+
+  <details class="panel cat-panel" id="cat-section">
+    <summary>⚙️ จัดการหมวดหมู่</summary>
+    <form id="cat-form" class="form-row">
+      <select id="cat-type">
+        <option value="expense">รายจ่าย</option>
+        <option value="income">รายรับ</option>
+      </select>
+      <input type="text" id="cat-name" placeholder="ชื่อหมวดหมู่ใหม่" required>
+      <button type="submit">➕ เพิ่มหมวดหมู่</button>
+    </form>
+    <div class="category-lists">
+      <div>
+        <h3>รายรับ</h3>
+        <ul id="cat-list-income" class="cat-list"></ul>
+      </div>
+      <div>
+        <h3>รายจ่าย</h3>
+        <ul id="cat-list-expense" class="cat-list"></ul>
+      </div>
+    </div>
+    <p id="cat-error" class="error hidden"></p>
+  </details>
+
+  <details class="panel sync-panel" id="sync-section">
+    <summary>☁️ ซิงค์กับ Google Sheet <span id="sync-status-badge" class="sync-badge">ยังไม่ได้ตั้งค่า</span></summary>
+
+    <details class="more-filters sync-help">
+      <summary>📖 วิธีตั้งค่า (ทำครั้งเดียว)</summary>
+      <ol>
+        <li>ไปที่ <strong>console.cloud.google.com</strong> สร้างโปรเจกต์ใหม่ (หรือใช้โปรเจกต์เดิม)</li>
+        <li>เปิดใช้งาน <strong>Google Sheets API</strong></li>
+        <li>ไปที่ IAM & Admin → Service Accounts → สร้าง Service Account ใหม่ (ตั้งชื่ออะไรก็ได้)</li>
+        <li>เข้าไปที่ Service Account นั้น → แท็บ Keys → Add Key → Create new key → เลือก JSON แล้วดาวน์โหลดไฟล์</li>
+        <li>สร้าง Google Sheet เปล่าๆ 1 ชีต แล้ว copy ลิงก์มา</li>
+        <li>กด Share ชีตนั้น ให้สิทธิ์ <strong>Editor</strong> กับอีเมลที่อยู่ในไฟล์ JSON (ช่อง client_email ลงท้ายด้วย .iam.gserviceaccount.com)</li>
+        <li>วางลิงก์ชีต + อัปโหลดไฟล์ JSON ด้านล่างนี้ แล้วกด "⬆️ ซิงค์ขึ้น" ครั้งแรก</li>
+      </ol>
+      <p class="hint">หมายเหตุ: รูปสลิปที่แนบจะไม่ถูกซิงค์ไปด้วย (จะซิงค์แค่รายการตัวเลข/ข้อความ) เปิดจากเครื่องอื่นจะเห็นรายการแต่ไม่เห็นรูปสลิปเก่า</p>
+    </details>
+
+    <form id="sync-config-form" class="form-row" enctype="multipart/form-data">
+      <label class="grow">
+        ลิงก์ หรือ ID ของ Google Sheet
+        <input type="text" id="sync-spreadsheet-id" placeholder="https://docs.google.com/spreadsheets/d/...">
+      </label>
+      <label class="grow">
+        ไฟล์ credentials (.json)
+        <input type="file" id="sync-credentials-file" accept=".json">
+      </label>
+      <button type="submit">💾 บันทึกการตั้งค่า</button>
+    </form>
+    <p id="sync-config-info" class="hint"></p>
+    <p id="sync-error" class="error hidden"></p>
+
+    <div class="form-actions">
+      <button type="button" id="sync-push-btn">⬆️ ซิงค์ขึ้น Google Sheet</button>
+      <button type="button" id="sync-pull-btn" class="secondary">⬇️ ดึงข้อมูลจาก Google Sheet มาที่เครื่องนี้</button>
+    </div>
+    <p id="sync-last-synced" class="hint"></p>
+  </details>
+
+  <nav class="bottom-nav">
+    <button type="button" class="nav-btn" data-target="add-section">
+      <span class="nav-icon">➕</span><span>เพิ่ม</span>
+    </button>
+    <button type="button" class="nav-btn" data-target="list-section">
+      <span class="nav-icon">📊</span><span>รายการ</span>
+    </button>
+    <button type="button" class="nav-btn" data-target="cat-section">
+      <span class="nav-icon">🔖</span><span>หมวดหมู่</span>
+    </button>
+    <button type="button" class="nav-btn" data-target="sync-section">
+      <span class="nav-icon">☁️</span><span>ซิงค์</span>
+    </button>
+  </nav>
+</div>
+
+<script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>

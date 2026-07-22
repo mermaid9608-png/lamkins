@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>เข้าสู่ระบบ - บันทึกรายรับรายจ่าย SB</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Mitr:wght@300;400;500;600;700&display=swap">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="auth-wrap">
+  <div class="auth-card">
+    <h1>บันทึกรายรับรายจ่าย SB</h1>
+
+    <form id="login-form">
+      <label>
+        ชื่อผู้ใช้
+        <input type="text" id="login-username" autofocus required>
+      </label>
+      <label>
+        รหัสผ่าน
+        <input type="password" id="login-password" required>
+      </label>
+      <button type="submit">เข้าสู่ระบบ</button>
+      <p id="login-error" class="error hidden"></p>
+    </form>
+    <p class="hint">ยังไม่มีบัญชี? <a href="/register">สมัครสมาชิก</a></p>
+  </div>
+</div>
+
+<script>
+document.getElementById("login-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const errEl = document.getElementById("login-error");
+  errEl.classList.add("hidden");
+  try {
+    const res = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        username: document.getElementById("login-username").value.trim(),
+        password: document.getElementById("login-password").value,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "เข้าสู่ระบบไม่สำเร็จ");
+    window.location.href = "/";
+  } catch (err) {
+    errEl.textContent = err.message;
+    errEl.classList.remove("hidden");
+  }
+});
+</script>
+</body>
+</html>
