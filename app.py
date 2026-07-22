@@ -245,9 +245,11 @@ def auth_register():
         db.rollback()
         return jsonify({"error": "มีชื่อผู้ใช้นี้อยู่แล้ว"}), 409
 
-    user_count = db.execute(text("SELECT COUNT(*) FROM users")).scalar()
-    if user_count == 1:
-        # First-ever account inherits any pre-existing (pre-multi-user) data.
+    # Inherit pre-existing (pre-multi-user) unclaimed data if any exists - only true for a
+    # local install upgraded from before multi-user support. A fresh database (e.g. a new
+    # cloud deployment) has none, so every registrant there gets fresh default categories.
+    unclaimed_categories = db.execute(text("SELECT COUNT(*) FROM categories WHERE user_id IS NULL")).scalar()
+    if unclaimed_categories > 0:
         db.execute(text("UPDATE categories SET user_id = :uid WHERE user_id IS NULL"), {"uid": new_user_id})
         db.execute(text("UPDATE transactions SET user_id = :uid WHERE user_id IS NULL"), {"uid": new_user_id})
     else:
@@ -320,6 +322,15 @@ def uploaded_file(filename):
 def list_categories():
     db = get_db()
     user_id = current_user_id()
+
+    # Self-heal: an account that somehow ended up with zero categories (e.g. accounts
+    # created by the first-registrant-on-a-fresh-database edge case, now fixed) gets
+    # seeded here instead of staying stuck with an empty category dropdown forever.
+    total = db.execute(text("SELECT COUNT(*) FROM categories WHERE user_id = :uid"), {"uid": user_id}).scalar()
+    if total == 0:
+        seed_default_categories(db, user_id)
+        db.commit()
+
     cat_type = request.args.get("type")
     if cat_type in ("income", "expense"):
         rows = db.execute(
