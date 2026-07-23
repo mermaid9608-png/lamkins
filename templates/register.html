@@ -27,10 +27,6 @@
         ยืนยันรหัสผ่าน
         <input type="password" id="reg-password-confirm" minlength="4" required>
       </label>
-      <label>
-        รหัสเชิญ
-        <input type="text" id="reg-invite-code" required>
-      </label>
       <button type="submit">สมัครสมาชิก</button>
       <p id="register-error" class="error hidden"></p>
     </form>
@@ -57,7 +53,6 @@ document.getElementById("register-form").addEventListener("submit", async (e) =>
       body: JSON.stringify({
         username: document.getElementById("reg-username").value.trim(),
         password,
-        invite_code: document.getElementById("reg-invite-code").value,
       }),
     });
     const data = await res.json();

@@ -1,6 +1,6 @@
 """
 รายรับ-รายจ่าย (Income/Expense Tracker)
-Flask backend. Multi-user (invite-code registration), each user's data is private.
+Flask backend. Multi-user (open registration), each user's data is private.
 
 Local/LAN mode (default): SQLite file + local uploads/ folder + local config files.
 Cloud mode (set DATABASE_URL): Postgres (e.g. Supabase) + Supabase Storage for slips +
@@ -44,7 +44,7 @@ LOGIN_MAX_ATTEMPTS = 5
 LOGIN_LOCKOUT_SECONDS = 60
 
 # Endpoints reachable without being logged in
-PUBLIC_ENDPOINTS = {"login_page", "register_page", "setup_page", "auth_login", "auth_register", "auth_setup", "static"}
+PUBLIC_ENDPOINTS = {"login_page", "register_page", "auth_login", "auth_register", "static"}
 
 
 def load_or_create_secret_key():
@@ -129,10 +129,6 @@ def transaction_to_dict(row):
 
 # ---------- Auth ----------
 
-def is_localhost(addr):
-    return addr in ("127.0.0.1", "::1")
-
-
 # In-memory attempt tracker (login + register, same abuse pattern): ip -> (fail_count, window_start_time).
 # Resets on server restart, and isn't shared across worker processes - fine for a personal
 # app, it just slows down brute force rather than fully preventing it.
@@ -164,11 +160,6 @@ def require_login():
     if request.endpoint in PUBLIC_ENDPOINTS or request.endpoint is None:
         return None
 
-    if not db_module.get_config("invite_code_hash"):
-        if request.path.startswith("/api/"):
-            return jsonify({"error": "แอปนี้ยังไม่ได้ตั้งรหัสเชิญ กรุณาเปิด /setup จากเครื่องนี้ก่อน"}), 503
-        return redirect(url_for("setup_page"))
-
     if not session.get("user_id"):
         if request.path.startswith("/api/"):
             return jsonify({"error": "กรุณาเข้าสู่ระบบก่อน (please log in)"}), 401
@@ -176,31 +167,8 @@ def require_login():
     return None
 
 
-@app.route("/setup")
-def setup_page():
-    if db_module.get_config("invite_code_hash"):
-        return redirect(url_for("login_page"))
-    return render_template("setup_auth.html")
-
-
-@app.route("/api/auth/setup", methods=["POST"])
-def auth_setup():
-    if not is_localhost(request.remote_addr):
-        return jsonify({"error": "ตั้งค่ารหัสเชิญได้จากเครื่องนี้เท่านั้น (localhost only)"}), 403
-    if db_module.get_config("invite_code_hash"):
-        return jsonify({"error": "ตั้งค่าไปแล้ว ถ้าต้องการเปลี่ยนให้ลบค่า invite_code_hash ออกจากฐานข้อมูลแล้วรันแอปใหม่"}), 403
-    data = request.get_json(silent=True) or {}
-    invite_code = data.get("invite_code") or ""
-    if len(invite_code) < MIN_PASSWORD_LENGTH:
-        return jsonify({"error": f"รหัสเชิญต้องมีอย่างน้อย {MIN_PASSWORD_LENGTH} ตัวอักษร"}), 400
-    db_module.set_config("invite_code_hash", generate_password_hash(invite_code))
-    return jsonify({"ok": True})
-
-
 @app.route("/register")
 def register_page():
-    if not db_module.get_config("invite_code_hash"):
-        return redirect(url_for("setup_page"))
     if session.get("user_id"):
         return redirect(url_for("index"))
     return render_template("register.html")
@@ -211,19 +179,14 @@ def auth_register():
     addr = request.remote_addr
     if rate_limited(addr):
         return jsonify({"error": "ลองผิดหลายครั้งเกินไป กรุณารอสักครู่แล้วลองใหม่"}), 429
-
-    invite_hash = db_module.get_config("invite_code_hash")
-    if not invite_hash:
-        return jsonify({"error": "แอปนี้ยังไม่ได้ตั้งรหัสเชิญ"}), 503
+    # Registration is open (no invite code) - throttle attempts per IP regardless of
+    # outcome so a script can't mass-create accounts.
+    record_failed_login(addr)
 
     data = request.get_json(silent=True) or {}
-    invite_code = data.get("invite_code") or ""
     username = (data.get("username") or "").strip()
     password = data.get("password") or ""
 
-    if not check_password_hash(invite_hash, invite_code):
-        record_failed_login(addr)
-        return jsonify({"error": "รหัสเชิญไม่ถูกต้อง"}), 403
     if len(username) < MIN_USERNAME_LENGTH:
         return jsonify({"error": f"ชื่อผู้ใช้ต้องมีอย่างน้อย {MIN_USERNAME_LENGTH} ตัวอักษร"}), 400
     if len(password) < MIN_PASSWORD_LENGTH:
@@ -265,8 +228,6 @@ def auth_register():
 
 @app.route("/login")
 def login_page():
-    if not db_module.get_config("invite_code_hash"):
-        return redirect(url_for("setup_page"))
     if session.get("user_id"):
         return redirect(url_for("index"))
     return render_template("login.html")
@@ -760,8 +721,6 @@ if __name__ == "__main__":
     print(f" บันทึกรายรับรายจ่าย SB - {mode}")
     print(f" เครื่องนี้      : http://127.0.0.1:5000")
     print(f" เครื่องอื่นในวงเดียวกัน : http://{lan_ip}:5000")
-    if not db_module.get_config("invite_code_hash"):
-        print(" ยังไม่ได้ตั้งรหัสเชิญ - เปิด http://127.0.0.1:5000/setup จากเครื่องนี้ก่อน")
     if db_module.IS_POSTGRES and not os.environ.get("FLASK_SECRET_KEY"):
         print(" คำเตือน: ไม่มี FLASK_SECRET_KEY - ผู้ใช้จะถูกล็อกเอาต์ทุกครั้งที่ redeploy")
     print("=" * 60)

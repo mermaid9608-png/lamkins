@@ -147,18 +147,11 @@ def init_db():
 
 
 def _migrate_legacy_json_config():
-    """One-time import of the old local-file config (auth_config.json, sync_config.json,
-    google-credentials.json) into app_config, for installs upgraded from before config
-    moved into the database. No-op once already migrated, and a no-op on a fresh install
-    (cloud or local) where these files never existed."""
+    """One-time import of the old local-file config (sync_config.json, google-credentials.json)
+    into app_config, for installs upgraded from before config moved into the database. No-op
+    once already migrated, and a no-op on a fresh install (cloud or local) where these files
+    never existed."""
     import json
-
-    auth_path = os.path.join(BASE_DIR, "auth_config.json")
-    if os.path.exists(auth_path) and get_config("invite_code_hash") is None:
-        with open(auth_path, "r", encoding="utf-8") as f:
-            cfg = json.load(f)
-        if cfg.get("invite_code_hash"):
-            set_config("invite_code_hash", cfg["invite_code_hash"])
 
     sync_path = os.path.join(BASE_DIR, "sync_config.json")
     if os.path.exists(sync_path) and get_config("sync_spreadsheet_id") is None:
