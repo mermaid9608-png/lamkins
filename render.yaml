@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: expense-tracker-sb
+    name: lamkins-sb
     runtime: python
     plan: free
     region: singapore
