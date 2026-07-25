@@ -243,7 +243,7 @@ body {
 
 input, select, button {
   font-family: inherit;
-  font-size: 0.95rem;
+  font-size: 16px; /* not rem: iOS Safari auto-zooms on focus for any input under 16px */
 }
 
 input[type="text"], input[type="number"], input[type="date"], input[type="month"],
@@ -579,7 +579,56 @@ tbody td:last-child { border-radius: 0 var(--radius-sm) var(--radius-sm) 0; }
   text-align: left;
 }
 
+/* ---------- Mobile ---------- */
+
 @media (max-width: 640px) {
+  .app { padding: 16px 12px 100px; }
+
   .category-lists { grid-template-columns: 1fr; }
   .panel-header { flex-direction: column; align-items: flex-start; }
+  .panel { padding: 16px; }
+
+  .app-header h1 { font-size: 1.4rem; }
+  .bank-card-value { font-size: 1.7rem; }
+
+  .form-row { gap: 10px; }
+  .form-row label.grow { min-width: 0; }
+
+  /* Transaction table -> stacked cards. No JS change needed beyond the data-label
+     attributes already on each <td>, used here as the row's mini-label. */
+  #tx-table thead { display: none; }
+  #tx-table, #tx-table tbody, #tx-table tr, #tx-table td {
+    display: block;
+    width: 100%;
+  }
+  #tx-table { border-spacing: 0; }
+  #tx-table tr {
+    background: #fffdf5;
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+    margin-bottom: 10px;
+    box-shadow: 0 2px 8px rgba(198, 120, 0, 0.08);
+  }
+  #tx-table td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--border);
+    text-align: right;
+  }
+  #tx-table td:last-child { border-bottom: none; }
+  #tx-table td::before {
+    content: attr(data-label);
+    color: var(--muted);
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-align: left;
+    flex-shrink: 0;
+  }
+  #tx-table td.row-actions {
+    justify-content: flex-end;
+  }
+  #tx-table td.row-actions::before { content: none; }
 }

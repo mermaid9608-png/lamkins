@@ -244,28 +244,34 @@ function renderTransactions(rows) {
     const tr = document.createElement("tr");
 
     const tdDate = document.createElement("td");
+    tdDate.dataset.label = "วันที่";
     tdDate.textContent = tx.date;
 
     const tdType = document.createElement("td");
+    tdType.dataset.label = "ประเภท";
     const badge = document.createElement("span");
     badge.className = `type-badge ${tx.type}`;
     badge.textContent = tx.type === "income" ? "รายรับ" : "รายจ่าย";
     tdType.appendChild(badge);
 
     const tdCategory = document.createElement("td");
+    tdCategory.dataset.label = "หมวดหมู่";
     const catChip = document.createElement("span");
     catChip.className = "category-chip";
     catChip.textContent = `${categoryEmoji(tx.category_name, tx.type)} ${tx.category_name}`;
     tdCategory.appendChild(catChip);
 
     const tdAmount = document.createElement("td");
+    tdAmount.dataset.label = "จำนวนเงิน";
     tdAmount.className = `amount-cell ${tx.type}`;
     tdAmount.textContent = `${tx.type === "expense" ? "-" : "+"}${fmtMoney(tx.amount)}`;
 
     const tdNote = document.createElement("td");
+    tdNote.dataset.label = "บันทึก";
     tdNote.textContent = tx.note || "-";
 
     const tdSlip = document.createElement("td");
+    tdSlip.dataset.label = "สลิป";
     if (tx.slip_url) {
       const link = document.createElement("a");
       link.href = tx.slip_url;
@@ -285,6 +291,7 @@ function renderTransactions(rows) {
     }
 
     const tdActions = document.createElement("td");
+    tdActions.dataset.label = "จัดการ";
     tdActions.className = "row-actions";
     const editBtn = document.createElement("button");
     editBtn.className = "secondary";
