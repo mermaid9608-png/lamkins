@@ -86,6 +86,21 @@ app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=30)
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 
+
+def static_url(filename):
+    """Cache-busted static asset URL - appends the file's mtime so browsers (especially
+    mobile ones, which cache aggressively) fetch the new version after every deploy
+    instead of silently keeping a stale cached copy of style.css/app.js."""
+    path = os.path.join(app.static_folder, filename)
+    try:
+        version = int(os.path.getmtime(path))
+    except OSError:
+        version = 0
+    return url_for("static", filename=filename) + f"?v={version}"
+
+
+app.jinja_env.globals["static_url"] = static_url
+
 DEFAULT_CATEGORIES = [
     ("เงินเดือน", "income"),
     ("โบนัส", "income"),
