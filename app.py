@@ -28,6 +28,7 @@ from datetime import datetime, timedelta
 from flask import Flask, g, jsonify, request, send_from_directory, render_template, session, redirect, url_for
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
+from werkzeug.middleware.proxy_fix import ProxyFix
 from werkzeug.security import generate_password_hash, check_password_hash
 
 import db as db_module
@@ -72,6 +73,13 @@ def get_lan_ip():
 
 
 app = Flask(__name__)
+# Render (and most PaaS hosts) sit the app behind one reverse-proxy hop. Without this,
+# request.remote_addr is the proxy's own internal IP for every single visitor - which
+# means the per-IP rate limiter below would treat all visitors as one shared "client"
+# and lock everyone out together. Trusting exactly one hop of X-Forwarded-For recovers
+# the real client IP. Harmless locally: with no proxy in front, there's no such header
+# and remote_addr falls back to the direct connection as before.
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
 app.config["MAX_CONTENT_LENGTH"] = MAX_CONTENT_LENGTH
 app.secret_key = load_or_create_secret_key()
 app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=30)
