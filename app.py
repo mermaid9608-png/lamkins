@@ -114,6 +114,7 @@ DEFAULT_CATEGORIES = [
     ("สุขภาพ", "expense"),
     ("บันเทิง", "expense"),
     ("การศึกษา", "expense"),
+    ("เงินเก็บ", "expense"),
     ("อื่นๆ", "expense"),
 ]
 

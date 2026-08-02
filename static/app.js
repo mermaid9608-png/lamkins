@@ -20,6 +20,7 @@ const CATEGORY_EMOJI = [
   [["สุขภาพ", "หมอ", "ยา"], "💊"],
   [["บันเทิง", "หนัง", "เกม"], "🎬"],
   [["การศึกษา", "เรียน", "หนังสือ"], "📚"],
+  [["เงินเก็บ", "ออมเงิน", "ออมทรัพย์"], "🐷"],
 ];
 
 function categoryEmoji(name, type) {
@@ -321,6 +322,61 @@ async function loadSummary() {
   el("summary-income").textContent = fmtMoney(data.income_total);
   el("summary-expense").textContent = fmtMoney(data.expense_total);
   el("summary-balance").textContent = fmtMoney(data.balance);
+  renderStats(data.by_category);
+}
+
+// ---------- Stats (expense breakdown donut) ----------
+
+const CHART_COLORS = [
+  "#ef4444", "#f59e0b", "#eab308", "#84cc16", "#06b17a",
+  "#0ea5e9", "#6366f1", "#8b5cf6", "#ec4899", "#f97316",
+];
+
+function renderStats(byCategory) {
+  const expenseCats = byCategory.filter((c) => c.type === "expense" && c.total > 0);
+  const donut = el("expense-donut");
+  const legend = el("stats-legend");
+  const emptyMsg = el("stats-empty");
+  legend.innerHTML = "";
+
+  const total = expenseCats.reduce((sum, c) => sum + c.total, 0);
+  if (total === 0) {
+    donut.style.background = "var(--border)";
+    el("donut-total").textContent = "0.00";
+    emptyMsg.classList.remove("hidden");
+    return;
+  }
+  emptyMsg.classList.add("hidden");
+
+  let cursor = 0;
+  const stops = expenseCats.map((c, i) => {
+    const color = CHART_COLORS[i % CHART_COLORS.length];
+    const start = cursor;
+    cursor += (c.total / total) * 100;
+    return `${color} ${start}% ${cursor}%`;
+  });
+  donut.style.background = `conic-gradient(${stops.join(", ")})`;
+  el("donut-total").textContent = fmtMoney(total);
+
+  expenseCats.forEach((c, i) => {
+    const color = CHART_COLORS[i % CHART_COLORS.length];
+    const pct = ((c.total / total) * 100).toFixed(1);
+    const li = document.createElement("li");
+    const dot = document.createElement("span");
+    dot.className = "legend-dot";
+    dot.style.background = color;
+    const name = document.createElement("span");
+    name.className = "legend-name";
+    name.textContent = `${categoryEmoji(c.category_name, "expense")} ${c.category_name}`;
+    const value = document.createElement("span");
+    value.className = "legend-value";
+    value.textContent = fmtMoney(c.total);
+    const percent = document.createElement("span");
+    percent.className = "legend-percent";
+    percent.textContent = `${pct}%`;
+    li.append(dot, name, value, percent);
+    legend.appendChild(li);
+  });
 }
 
 // ---------- Filters ----------

@@ -145,6 +145,21 @@
     </div>
   </section>
 
+  <section class="panel" id="stats-section">
+    <h2>📊 สถิติรายจ่าย</h2>
+    <div class="stats-body">
+      <div class="donut-wrap">
+        <div class="donut-chart" id="expense-donut"></div>
+        <div class="donut-center">
+          <span class="donut-total" id="donut-total">0.00</span>
+          <span class="donut-total-label">รวมรายจ่าย</span>
+        </div>
+      </div>
+      <ul class="stats-legend" id="stats-legend"></ul>
+    </div>
+    <p id="stats-empty" class="empty-msg hidden">ยังไม่มีรายจ่ายในช่วงนี้</p>
+  </section>
+
   <details class="panel cat-panel" id="cat-section">
     <summary>⚙️ จัดการหมวดหมู่</summary>
     <form id="cat-form" class="form-row">
@@ -211,7 +226,10 @@
       <span class="nav-icon">➕</span><span>เพิ่ม</span>
     </button>
     <button type="button" class="nav-btn" data-target="list-section">
-      <span class="nav-icon">📊</span><span>รายการ</span>
+      <span class="nav-icon">📋</span><span>รายการ</span>
+    </button>
+    <button type="button" class="nav-btn" data-target="stats-section">
+      <span class="nav-icon">📊</span><span>สถิติ</span>
     </button>
     <button type="button" class="nav-btn" data-target="cat-section">
       <span class="nav-icon">🔖</span><span>หมวดหมู่</span>
