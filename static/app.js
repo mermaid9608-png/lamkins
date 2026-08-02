@@ -502,6 +502,27 @@ el("logout-btn").addEventListener("click", async () => {
   window.location.href = "/login";
 });
 
+// ---------- Theme toggle ----------
+
+function currentTheme() {
+  return (
+    document.documentElement.getAttribute("data-theme") ||
+    (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
+  );
+}
+
+function applyTheme(theme) {
+  document.documentElement.setAttribute("data-theme", theme);
+  localStorage.setItem("theme", theme);
+  el("theme-toggle-btn").textContent = theme === "dark" ? "☀️" : "🌙";
+}
+
+el("theme-toggle-btn").addEventListener("click", () => {
+  applyTheme(currentTheme() === "dark" ? "light" : "dark");
+});
+
+el("theme-toggle-btn").textContent = currentTheme() === "dark" ? "☀️" : "🌙";
+
 // ---------- Bottom nav ----------
 
 document.querySelectorAll(".nav-btn").forEach((btn) => {

@@ -3,6 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>
+(function () {
+  var t = localStorage.getItem("theme");
+  if (t === "dark" || t === "light") document.documentElement.setAttribute("data-theme", t);
+})();
+</script>
 <title>เข้าสู่ระบบ - บันทึกรายรับรายจ่าย SB</title>
 <link rel="icon" type="image/png" sizes="32x32" href="{{ static_url('favicon-32.png') }}">
 <link rel="icon" type="image/png" sizes="192x192" href="{{ static_url('favicon-192.png') }}">
@@ -12,6 +18,7 @@
 <link rel="stylesheet" href="{{ static_url('style.css') }}">
 </head>
 <body>
+<button type="button" id="theme-toggle-btn" class="secondary theme-toggle-fixed" title="สลับธีมสว่าง/มืด (Toggle theme)">🌙</button>
 <div class="auth-wrap">
   <div class="auth-card">
     <h1>บันทึกรายรับรายจ่าย SB</h1>
@@ -33,6 +40,23 @@
 </div>
 
 <script>
+(function () {
+  function currentTheme() {
+    return (
+      document.documentElement.getAttribute("data-theme") ||
+      (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
+    );
+  }
+  var btn = document.getElementById("theme-toggle-btn");
+  btn.textContent = currentTheme() === "dark" ? "☀️" : "🌙";
+  btn.addEventListener("click", function () {
+    var next = currentTheme() === "dark" ? "light" : "dark";
+    document.documentElement.setAttribute("data-theme", next);
+    localStorage.setItem("theme", next);
+    btn.textContent = next === "dark" ? "☀️" : "🌙";
+  });
+})();
+
 document.getElementById("login-form").addEventListener("submit", async (e) => {
   e.preventDefault();
   const errEl = document.getElementById("login-error");

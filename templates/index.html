@@ -3,6 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>
+(function () {
+  var t = localStorage.getItem("theme");
+  if (t === "dark" || t === "light") document.documentElement.setAttribute("data-theme", t);
+})();
+</script>
 <title>บันทึกรายรับรายจ่าย SB</title>
 <link rel="icon" type="image/png" sizes="32x32" href="{{ static_url('favicon-32.png') }}">
 <link rel="icon" type="image/png" sizes="192x192" href="{{ static_url('favicon-192.png') }}">
@@ -15,7 +21,10 @@
 <div class="app">
   <div class="auth-bar">
     <span class="auth-bar-user">🔒 {{ username }}</span>
-    <button type="button" id="logout-btn" class="secondary">ออกจากระบบ</button>
+    <div class="auth-bar-actions">
+      <button type="button" id="theme-toggle-btn" class="secondary theme-toggle" title="สลับธีมสว่าง/มืด (Toggle theme)">🌙</button>
+      <button type="button" id="logout-btn" class="secondary">ออกจากระบบ</button>
+    </div>
   </div>
 
   <header class="app-header">
