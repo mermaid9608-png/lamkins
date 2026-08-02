@@ -9,8 +9,6 @@ Row ids from the sheet are NOT reused as local primary keys (the categories/tran
 tables are shared across all users, so blindly reinserting a sheet's id could collide with
 another user's row). Instead, pull() inserts fresh rows and remaps category_id references
 via the id that was in the sheet at push time.
-
-Slip image files are never synced - only the filename text travels with the row.
 """
 import json
 import re
@@ -29,7 +27,7 @@ except ImportError:
 
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 CATEGORIES_HEADER = ["id", "name", "type"]
-TRANSACTIONS_HEADER = ["id", "date", "type", "category_id", "amount", "note", "slip_filename", "created_at"]
+TRANSACTIONS_HEADER = ["id", "date", "type", "category_id", "amount", "note", "created_at"]
 
 
 class SyncError(Exception):
@@ -86,7 +84,7 @@ def read_local_data(user_id):
         ).fetchall()
         transactions = conn.execute(
             text(
-                "SELECT id, date, type, category_id, amount, note, slip_filename, created_at "
+                "SELECT id, date, type, category_id, amount, note, created_at "
                 "FROM transactions WHERE user_id = :uid ORDER BY id"
             ),
             {"uid": user_id},
@@ -107,7 +105,6 @@ def write_to_sheet(spreadsheet, categories, transactions):
             t["category_id"],
             t["amount"],
             t["note"] or "",
-            t["slip_filename"] or "",
             t["created_at"],
         ]
         for t in transactions
@@ -185,8 +182,8 @@ def apply_to_db(user_id, categories, transactions):
                 text(
                     """
                     INSERT INTO transactions
-                        (user_id, date, type, category_id, amount, note, slip_filename, created_at)
-                    VALUES (:uid, :date, :type, :category_id, :amount, :note, :slip_filename, :created_at)
+                        (user_id, date, type, category_id, amount, note, created_at)
+                    VALUES (:uid, :date, :type, :category_id, :amount, :note, :created_at)
                     """
                 ),
                 {
@@ -196,7 +193,6 @@ def apply_to_db(user_id, categories, transactions):
                     "category_id": new_cat_id,
                     "amount": amount,
                     "note": t["note"] or None,
-                    "slip_filename": t["slip_filename"] or None,
                     "created_at": t["created_at"],
                 },
             )

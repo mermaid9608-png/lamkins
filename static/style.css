@@ -307,13 +307,6 @@ button.danger:hover { background: #ffdcdd; }
 
 .hidden { display: none !important; }
 
-.existing-slip {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 0.85rem;
-}
-
 .cat-panel summary,
 .sync-panel summary {
   cursor: pointer;
@@ -477,14 +470,6 @@ tbody td:last-child { border-radius: 0 var(--radius-sm) var(--radius-sm) 0; }
   padding: 6px 10px;
   font-size: 0.8rem;
   border-radius: 999px;
-}
-
-.slip-thumb {
-  width: 36px;
-  height: 36px;
-  object-fit: cover;
-  border-radius: 10px;
-  border: 2px solid var(--border);
 }
 
 .empty-msg {

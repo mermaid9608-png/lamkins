@@ -76,19 +76,6 @@
           <input type="text" id="tx-note" placeholder="เช่น ค่าข้าวเที่ยง">
         </label>
       </div>
-      <div class="form-row">
-        <label class="grow">
-          แนบสลิป (Attach slip - image/pdf)
-          <input type="file" id="tx-slip" accept="image/*,.pdf">
-        </label>
-        <div id="existing-slip" class="existing-slip hidden">
-          <span>ไฟล์ปัจจุบัน:</span>
-          <a id="existing-slip-link" href="#" target="_blank">ดูสลิป</a>
-          <label class="checkbox-label">
-            <input type="checkbox" id="remove-slip"> ลบไฟล์นี้
-          </label>
-        </div>
-      </div>
       <div class="form-actions">
         <button type="submit" id="submit-btn">✅ บันทึก</button>
         <button type="button" id="cancel-edit-btn" class="secondary hidden">✖️ ยกเลิก</button>
@@ -138,7 +125,6 @@
             <th>หมวดหมู่</th>
             <th>จำนวนเงิน</th>
             <th>บันทึก</th>
-            <th>สลิป</th>
             <th>จัดการ</th>
           </tr>
         </thead>
@@ -207,7 +193,6 @@
         <li>กด Share ชีตนั้น ให้สิทธิ์ <strong>Editor</strong> กับอีเมลที่อยู่ในไฟล์ JSON (ช่อง client_email ลงท้ายด้วย .iam.gserviceaccount.com)</li>
         <li>วางลิงก์ชีต + อัปโหลดไฟล์ JSON ด้านล่างนี้ แล้วกด "⬆️ ซิงค์ขึ้น" ครั้งแรก</li>
       </ol>
-      <p class="hint">หมายเหตุ: รูปสลิปที่แนบจะไม่ถูกซิงค์ไปด้วย (จะซิงค์แค่รายการตัวเลข/ข้อความ) เปิดจากเครื่องอื่นจะเห็นรายการแต่ไม่เห็นรูปสลิปเก่า</p>
     </details>
 
     <form id="sync-config-form" class="form-row" enctype="multipart/form-data">

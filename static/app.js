@@ -148,8 +148,6 @@ function resetForm() {
   el("tx-form").reset();
   el("tx-date").value = todayISO();
   renderCategorySelects();
-  el("existing-slip").classList.add("hidden");
-  el("remove-slip").checked = false;
   el("form-title").textContent = "✏️ เพิ่มรายการใหม่";
   el("submit-btn").textContent = "✅ บันทึก";
   el("cancel-edit-btn").classList.add("hidden");
@@ -165,15 +163,6 @@ function startEdit(tx) {
   el("tx-amount").value = tx.amount;
   el("tx-category").value = tx.category_id;
   el("tx-note").value = tx.note || "";
-  el("tx-slip").value = "";
-  el("remove-slip").checked = false;
-
-  if (tx.slip_url) {
-    el("existing-slip").classList.remove("hidden");
-    el("existing-slip-link").href = tx.slip_url;
-  } else {
-    el("existing-slip").classList.add("hidden");
-  }
 
   el("form-title").textContent = "📝 แก้ไขรายการ";
   el("submit-btn").textContent = "✅ บันทึกการแก้ไข";
@@ -194,9 +183,6 @@ el("tx-form").addEventListener("submit", async (e) => {
   fd.append("category_id", el("tx-category").value);
   fd.append("amount", el("tx-amount").value);
   fd.append("note", el("tx-note").value);
-  const file = el("tx-slip").files[0];
-  if (file) fd.append("slip", file);
-  if (el("remove-slip").checked) fd.append("remove_slip", "1");
 
   try {
     if (state.editingId) {
@@ -274,26 +260,6 @@ function renderTransactions(rows) {
     tdNote.dataset.label = "บันทึก";
     tdNote.textContent = tx.note || "-";
 
-    const tdSlip = document.createElement("td");
-    tdSlip.dataset.label = "สลิป";
-    if (tx.slip_url) {
-      const link = document.createElement("a");
-      link.href = tx.slip_url;
-      link.target = "_blank";
-      const isImage = /\.(png|jpe?g|webp|gif)$/i.test(tx.slip_filename || "");
-      if (isImage) {
-        const img = document.createElement("img");
-        img.src = tx.slip_url;
-        img.className = "slip-thumb";
-        link.appendChild(img);
-      } else {
-        link.textContent = "PDF";
-      }
-      tdSlip.appendChild(link);
-    } else {
-      tdSlip.textContent = "-";
-    }
-
     const tdActions = document.createElement("td");
     tdActions.dataset.label = "จัดการ";
     tdActions.className = "row-actions";
@@ -310,7 +276,7 @@ function renderTransactions(rows) {
     tdActions.appendChild(editBtn);
     tdActions.appendChild(delBtn);
 
-    tr.append(tdDate, tdType, tdCategory, tdAmount, tdNote, tdSlip, tdActions);
+    tr.append(tdDate, tdType, tdCategory, tdAmount, tdNote, tdActions);
     tbody.appendChild(tr);
   });
 }

@@ -2,10 +2,10 @@
 รายรับ-รายจ่าย (Income/Expense Tracker)
 Flask backend. Multi-user (open registration), each user's data is private.
 
-Local/LAN mode (default): SQLite file + local uploads/ folder + local config files.
-Cloud mode (set DATABASE_URL): Postgres (e.g. Supabase) + Supabase Storage for slips +
-config stored in the database itself - the local filesystem on most free hosts is wiped
-on every restart/redeploy, so nothing that needs to survive can live on disk there.
+Local/LAN mode (default): SQLite file + local config files.
+Cloud mode (set DATABASE_URL): Postgres (e.g. Supabase), config stored in the database
+itself - the local filesystem on most free hosts is wiped on every restart/redeploy, so
+nothing that needs to survive can live on disk there.
 
 Run locally:
     pip install -r requirements.txt
@@ -13,11 +13,9 @@ Run locally:
 Then open http://127.0.0.1:5000
 
 Cloud deployment env vars:
-    DATABASE_URL         - Postgres connection string (e.g. from Supabase)
-    SUPABASE_URL          - e.g. https://xxxx.supabase.co
-    SUPABASE_SERVICE_KEY  - Supabase service_role key (Storage uploads)
-    FLASK_SECRET_KEY      - random string; MUST be set on a cloud host or sessions
-                            reset on every restart
+    DATABASE_URL      - Postgres connection string (e.g. from Supabase)
+    FLASK_SECRET_KEY  - random string; MUST be set on a cloud host or sessions
+                        reset on every restart
 """
 import os
 import secrets
@@ -25,7 +23,7 @@ import socket
 import time
 from datetime import datetime, timedelta
 
-from flask import Flask, g, jsonify, request, send_from_directory, render_template, session, redirect, url_for
+from flask import Flask, g, jsonify, request, render_template, session, redirect, url_for
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 from werkzeug.middleware.proxy_fix import ProxyFix
@@ -33,7 +31,6 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 import db as db_module
 import gsheet_sync
-import storage
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 SECRET_KEY_PATH = os.path.join(BASE_DIR, "flask_secret.key")
@@ -142,13 +139,6 @@ def seed_default_categories(db, user_id):
 
 def current_user_id():
     return session["user_id"]
-
-
-def transaction_to_dict(row):
-    d = db_module.row_to_dict(row)
-    if d is not None:
-        d["slip_url"] = storage.slip_url(d["slip_filename"]) if d.get("slip_filename") else None
-    return d
 
 
 # ---------- Auth ----------
@@ -295,12 +285,6 @@ def index():
     return render_template("index.html", username=session.get("username"))
 
 
-@app.route("/uploads/<path:filename>")
-def uploaded_file(filename):
-    # Only reached in local mode - cloud mode returns direct Supabase public URLs instead.
-    return send_from_directory(storage.UPLOAD_DIR, filename)
-
-
 # ---------- Categories ----------
 
 @app.route("/api/categories", methods=["GET"])
@@ -445,7 +429,7 @@ def list_transactions():
     query += " ORDER BY t.date DESC, t.id DESC"
 
     rows = db.execute(text(query), params).fetchall()
-    return jsonify([transaction_to_dict(r) for r in rows])
+    return jsonify(db_module.rows_to_dicts(rows))
 
 
 @app.route("/api/transactions/<int:tx_id>", methods=["GET"])
@@ -463,7 +447,7 @@ def get_transaction(tx_id):
     ).fetchone()
     if not row:
         return jsonify({"error": "ไม่พบรายการ (transaction not found)"}), 404
-    return jsonify(transaction_to_dict(row))
+    return jsonify(db_module.row_to_dict(row))
 
 
 @app.route("/api/transactions", methods=["POST"])
@@ -481,18 +465,11 @@ def create_transaction():
     if not cat_row:
         return jsonify({"error": "หมวดหมู่ไม่ตรงกับประเภทรายการ (category/type mismatch)"}), 400
 
-    slip_filename = None
-    if "slip" in request.files:
-        result = storage.save_slip(request.files["slip"])
-        if result == "INVALID_TYPE":
-            return jsonify({"error": "ไฟล์สลิปต้องเป็นรูปภาพหรือ PDF เท่านั้น"}), 400
-        slip_filename = result
-
     result = db.execute(
         text(
             """
-            INSERT INTO transactions (user_id, date, type, category_id, amount, note, slip_filename, created_at)
-            VALUES (:uid, :date, :type, :category_id, :amount, :note, :slip_filename, :created_at)
+            INSERT INTO transactions (user_id, date, type, category_id, amount, note, created_at)
+            VALUES (:uid, :date, :type, :category_id, :amount, :note, :created_at)
             RETURNING id
             """
         ),
@@ -503,7 +480,6 @@ def create_transaction():
             "category_id": fields["category_id"],
             "amount": fields["amount"],
             "note": fields["note"],
-            "slip_filename": slip_filename,
             "created_at": datetime.utcnow().isoformat(),
         },
     )
@@ -519,7 +495,7 @@ def create_transaction():
         ),
         {"id": new_id},
     ).fetchone()
-    return jsonify(transaction_to_dict(new_row)), 201
+    return jsonify(db_module.row_to_dict(new_row)), 201
 
 
 @app.route("/api/transactions/<int:tx_id>", methods=["PUT"])
@@ -543,29 +519,11 @@ def update_transaction(tx_id):
     if not cat_row:
         return jsonify({"error": "หมวดหมู่ไม่ตรงกับประเภทรายการ (category/type mismatch)"}), 400
 
-    slip_filename = existing.slip_filename
-    remove_slip = request.form.get("remove_slip") == "1"
-    new_file = request.files.get("slip")
-
-    if remove_slip and slip_filename:
-        storage.delete_slip(slip_filename)
-        slip_filename = None
-
-    if new_file and new_file.filename:
-        result = storage.save_slip(new_file)
-        if result == "INVALID_TYPE":
-            return jsonify({"error": "ไฟล์สลิปต้องเป็นรูปภาพหรือ PDF เท่านั้น"}), 400
-        if result:
-            if slip_filename:
-                storage.delete_slip(slip_filename)
-            slip_filename = result
-
     db.execute(
         text(
             """
             UPDATE transactions
-            SET date = :date, type = :type, category_id = :category_id, amount = :amount,
-                note = :note, slip_filename = :slip_filename
+            SET date = :date, type = :type, category_id = :category_id, amount = :amount, note = :note
             WHERE id = :id AND user_id = :uid
             """
         ),
@@ -575,7 +533,6 @@ def update_transaction(tx_id):
             "category_id": fields["category_id"],
             "amount": fields["amount"],
             "note": fields["note"],
-            "slip_filename": slip_filename,
             "id": tx_id,
             "uid": user_id,
         },
@@ -591,23 +548,17 @@ def update_transaction(tx_id):
         ),
         {"id": tx_id},
     ).fetchone()
-    return jsonify(transaction_to_dict(row))
+    return jsonify(db_module.row_to_dict(row))
 
 
 @app.route("/api/transactions/<int:tx_id>", methods=["DELETE"])
 def delete_transaction(tx_id):
     db = get_db()
     user_id = current_user_id()
-    row = db.execute(
-        text("SELECT slip_filename FROM transactions WHERE id = :id AND user_id = :uid"),
-        {"id": tx_id, "uid": user_id},
-    ).fetchone()
-    if not row:
-        return jsonify({"error": "ไม่พบรายการ (transaction not found)"}), 404
-    if row.slip_filename:
-        storage.delete_slip(row.slip_filename)
-    db.execute(text("DELETE FROM transactions WHERE id = :id AND user_id = :uid"), {"id": tx_id, "uid": user_id})
+    cur = db.execute(text("DELETE FROM transactions WHERE id = :id AND user_id = :uid"), {"id": tx_id, "uid": user_id})
     db.commit()
+    if cur.rowcount == 0:
+        return jsonify({"error": "ไม่พบรายการ (transaction not found)"}), 404
     return jsonify({"ok": True})
 
 
