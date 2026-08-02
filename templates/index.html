@@ -150,12 +150,19 @@
 
   <section class="panel" id="stats-section">
     <h2>📊 สถิติรายจ่าย</h2>
+    <div class="savings-callout" id="savings-callout">
+      <span class="savings-callout-icon">🐷</span>
+      <div class="savings-callout-text">
+        <span class="savings-callout-label">เงินเก็บช่วงนี้</span>
+        <span class="savings-callout-value" id="savings-total">0.00</span>
+      </div>
+    </div>
     <div class="stats-body">
       <div class="donut-wrap">
         <div class="donut-chart" id="expense-donut"></div>
         <div class="donut-center">
           <span class="donut-total" id="donut-total">0.00</span>
-          <span class="donut-total-label">รวมรายจ่าย</span>
+          <span class="donut-total-label">รวมรายจ่าย (ไม่รวมเงินเก็บ)</span>
         </div>
       </div>
       <ul class="stats-legend" id="stats-legend"></ul>

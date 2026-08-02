@@ -29,6 +29,9 @@ function categoryEmoji(name, type) {
   return type === "income" ? "💵" : "🏷️";
 }
 
+const SAVINGS_KEYWORDS = ["เงินเก็บ", "ออมเงิน", "ออมทรัพย์"];
+const isSavingsCategory = (name) => SAVINGS_KEYWORDS.some((k) => name.includes(k));
+
 function todayISO() {
   const d = new Date();
   const pad = (x) => String(x).padStart(2, "0");
@@ -333,11 +336,17 @@ const CHART_COLORS = [
 ];
 
 function renderStats(byCategory) {
-  const expenseCats = byCategory.filter((c) => c.type === "expense" && c.total > 0);
+  const allExpenseCats = byCategory.filter((c) => c.type === "expense" && c.total > 0);
+  const savingsCats = allExpenseCats.filter((c) => isSavingsCategory(c.category_name));
+  const expenseCats = allExpenseCats.filter((c) => !isSavingsCategory(c.category_name));
   const donut = el("expense-donut");
   const legend = el("stats-legend");
   const emptyMsg = el("stats-empty");
   legend.innerHTML = "";
+
+  const savingsTotal = savingsCats.reduce((sum, c) => sum + c.total, 0);
+  el("savings-total").textContent = fmtMoney(savingsTotal);
+  el("savings-callout").classList.toggle("hidden", savingsTotal === 0);
 
   const total = expenseCats.reduce((sum, c) => sum + c.total, 0);
   if (total === 0) {
